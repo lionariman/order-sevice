@@ -1,0 +1,68 @@
+<!-- <!doctype html><meta charset="utf-8"/>
+<title>Order</title>
+<style>body{font-family:sans-serif;max-width:680px;margin:40px auto}input{padding:8px;width:70%}button{padding:8px}</style>
+<h1>Найти заказ</h1>
+<input id="id" placeholder="order_uid"/><button id="go">Искать</button>
+<pre id="out">Введите order_uid и нажмите "Искать".</pre>
+<script>
+go.onclick = async () => {
+  const v = id.value.trim(), out = document.getElementById('out');
+  if(!v){ out.textContent='Введите order_uid'; return }
+  out.textContent='Загрузка...';
+  try{
+    const r = await fetch('/order/'+encodeURIComponent(v));
+    if(r.status===404){ out.textContent='Не найдено'; return }
+    if(!r.ok){ out.textContent='Ошибка '+r.status; return }
+    out.textContent = JSON.stringify(await r.json(), null, 2);
+  }catch(e){ out.textContent='Ошибка: '+e }
+};
+</script> -->
+
+<!doctype html><meta charset="utf-8"/>
+<title>Найти заказ</title>
+<style>
+  body{font-family:sans-serif;max-width:720px;margin:40px auto;padding:0 16px}
+  input{padding:10px;width:70%} button{padding:10px}
+  #meta{margin:12px 0;font-size:14px}
+  .pill{display:inline-block;padding:3px 8px;border-radius:999px;background:#eee;margin-right:8px}
+  pre{background:#111;color:#eee;padding:12px;border-radius:8px;white-space:pre-wrap}
+  label{margin-left:8px;font-size:14px}
+</style>
+
+<h1>Найти заказ</h1>
+<input id="oid" placeholder="order_uid"/>
+<button id="btn">Искать</button>
+<label><input type="checkbox" id="nocache"> Без кэша</label>
+
+<div id="meta"></div>
+<pre id="out">Введите order_uid и нажмите "Искать".</pre>
+
+<script>
+async function fetchOrder(id, nocache){
+  const url = '/order/'+encodeURIComponent(id)+(nocache?'?nocache=1':'');
+  const t0 = performance.now();
+  const res = await fetch(url);
+  const t1 = performance.now();
+  const text = await res.text();
+  const source = res.headers.get('X-Source') || '—';
+  const serverMs = res.headers.get('X-Duration-ms') || '—';
+  const totalMs = (t1 - t0).toFixed(1);
+  return { ok: res.ok, status: res.status, body:text, source, serverMs, totalMs };
+}
+
+document.getElementById('btn').onclick = async () => {
+  const id = oid.value.trim(), out = document.getElementById('out'), meta = document.getElementById('meta');
+  const nocache = document.getElementById('nocache').checked;
+  if(!id){ out.textContent='Введите order_uid'; meta.textContent=''; return }
+  out.textContent = 'Загрузка...'; meta.textContent='';
+  try{
+    const r = await fetchOrder(id, nocache);
+    if(!r.ok){ out.textContent='Ошибка '+r.status; meta.textContent=''; return }
+    // красиво покажем откуда и как быстро
+    meta.innerHTML = `<span class="pill">Источник: <b>${r.source==='cache'?'Кэш':'База данных'}</b></span>
+                      <span class="pill">Сервер: ${r.serverMs} ms</span>
+                      <span class="pill">Итого (сеть+сервер): ${r.totalMs} ms</span>`;
+    try{ out.textContent = JSON.stringify(JSON.parse(r.body), null, 2) }catch{ out.textContent = r.body }
+  }catch(e){ out.textContent='Ошибка: '+e; meta.textContent='' }
+};
+</script>
