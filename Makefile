@@ -11,7 +11,7 @@ PG_PASS  := postgres
 PG_DB    := orders
 
 # ==== цели ====
-.PHONY: up down migrate migrate-local build run dev logs test clean produce cache-on cache-off
+.PHONY: up down migrate build run logs clean produce cache-on-up cache-off-up
 
 up:
 	$(DC) up -d --build
