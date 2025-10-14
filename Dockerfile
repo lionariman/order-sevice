@@ -10,6 +10,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o /app/app ./cmd/app
 FROM gcr.io/distroless/base-debian12
 WORKDIR /app
 COPY --from=build /app/app /app/app
+COPY .env.example /app/.env
 COPY web /app/web
 EXPOSE 8081
 ENTRYPOINT ["/app/app"]

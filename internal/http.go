@@ -43,7 +43,12 @@ func (h *HTTP) getOrder(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 			ms := float64(dur.Nanoseconds()) / 1e6
 			w.Header().Set("X-Duration-ms", fmt.Sprintf("%.6f", ms))
 			log.Printf("[HTTP] id=%s source=cache dur_ms=%.6f", id, ms)
-			json.NewEncoder(w).Encode(o)
+
+			// write data
+			err := json.NewEncoder(w).Encode(o)
+			if err != nil {
+				log.Printf("Encoding error: %v", err)
+			}
 			return
 		}
 		log.Printf("[HTTP] cache-miss id=%s", id)
@@ -53,10 +58,12 @@ func (h *HTTP) getOrder(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 	o, ok, err := h.repo.Get(r.Context(), id)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
+		log.Printf("DB get request (no-cache) error: %v", err)
 		return
 	}
 	if !ok {
 		http.NotFound(w, r)
+		log.Printf("DB not found (no-cache) error: %v", err)
 		return
 	}
 	if !nocache {
@@ -68,5 +75,11 @@ func (h *HTTP) getOrder(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 	dur := time.Since(start)
 	ms := float64(dur.Nanoseconds()) / 1e6
 	log.Printf("[HTTP] id=%s source=db dur_ms=%.6f", id, ms)
-	json.NewEncoder(w).Encode(o)
+
+	// write data
+	// fmt.Println(">> DB [", o, "]")
+	err = json.NewEncoder(w).Encode(o)
+	if err != nil {
+		log.Printf("Encoding error: %v", err)
+	}
 }

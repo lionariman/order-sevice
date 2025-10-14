@@ -29,3 +29,15 @@ func (c *Cache) Warm(list []*Order) {
 	}
 	c.mu.Unlock()
 }
+
+func (c *Cache) Delete(orderUID string) {
+	c.mu.Lock()
+	delete(c.m, orderUID)
+	c.mu.Unlock()
+}
+
+func (c *Cache) DeleteAllItems() {
+	c.mu.Lock()
+	c.m = make(map[string]*Order)
+	c.mu.Unlock()
+}

@@ -1,9 +1,12 @@
 package internal
 
 import (
+	"log"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -17,18 +20,23 @@ type Config struct {
 }
 
 func Env() Config {
-	get := func(k, d string) string {
-		if v := os.Getenv(k); v != "" {
-			return v
+	// Load .env file
+	if err := godotenv.Load(); err != nil {
+		log.Printf("Error loading .env file: %v", err)
+	}
+	get := func(k string) string {
+		v := os.Getenv(k)
+		if v == "" {
+			log.Fatalf("Environment variable %s is not set", k)
 		}
-		return d
+		return v
 	}
 	return Config{
-		Addr:         get("HTTP_ADDR", ":8081"),
-		PGURL:        get("PG_URL", "postgres://postgres:postgres@localhost:5432/orders?sslmode=disable"),
-		Brokers:      strings.Split(get("KAFKA_BROKERS", "localhost:29092"), ","),
-		Topic:        get("KAFKA_TOPIC", "orders"),
-		Group:        get("KAFKA_GROUP_ID", "order-svc"),
+		Addr:         get("HTTP_ADDR"),
+		PGURL:        get("PG_URL"),
+		Brokers:      strings.Split(get("KAFKA_BROKERS"), ","),
+		Topic:        get("KAFKA_TOPIC"),
+		Group:        get("KAFKA_GROUP_ID"),
 		WarmN:        1000,
 		CacheEnabled: loadCache(),
 	}
@@ -36,7 +44,10 @@ func Env() Config {
 
 func loadCache() bool {
 	v := os.Getenv("CACHE_ENABLED")
-	on, _ := strconv.ParseBool(v) // "1"/"true" -> true
+	on, err := strconv.ParseBool(v) // "1"/"true" -> true
+	if err != nil {
+		log.Printf("Cache is not enabled (converting error): %v", err)
+	}
 	if v == "" {
 		on = true
 	}

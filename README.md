@@ -20,7 +20,7 @@
 - `Makefile` — удобные команды для сборки, запуска и вспомогательных действий.
 
 ## Используемые технологии
-- Go 1.24.4
+- Go 1.25.0
 - Kafka (Confluent 7.6.x) + Zookeeper
 - PostgreSQL 16 + pgx/v5
 - Sarama (Kafka client), httprouter

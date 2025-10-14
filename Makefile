@@ -67,3 +67,7 @@ cache-off-up:
 .PHONY: app-logs
 app-logs:
 	docker compose logs -f app
+
+.PHONY: build-app
+build-app:
+	docker compose build app

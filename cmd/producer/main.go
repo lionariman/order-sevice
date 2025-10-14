@@ -15,6 +15,8 @@ import (
 	"github.com/IBM/sarama"
 )
 
+var rng *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
+
 func main() {
 	// CLI flags
 	n := flag.Int("n", 1, "how many orders to send")
@@ -36,11 +38,13 @@ func main() {
 	}
 	defer prod.Close()
 
-	rand.Seed(time.Now().UnixNano())
-
 	for i := 0; i < *n; i++ {
 		o := genOrder()
-		b, _ := json.Marshal(o)
+		b, err := json.Marshal(o)
+		if err != nil {
+			log.Printf("marshall failed: %v", err)
+			break
+		}
 		msg := &sarama.ProducerMessage{
 			Topic: *topic,
 			Key:   sarama.StringEncoder(o.OrderUID),
@@ -76,7 +80,7 @@ func genOrder() *intl.Order {
 	for _, it := range items {
 		goodsTotal += it.TotalPrice
 	}
-	deliveryCost := 150 + rand.Intn(500)
+	deliveryCost := 150 + rng.Intn(500)
 	amount := goodsTotal + deliveryCost
 
 	return &intl.Order{
@@ -117,14 +121,14 @@ func genOrder() *intl.Order {
 }
 
 func genItems(track string) []intl.Item {
-	n := 1 + rand.Intn(3) // 1..3 товаров
+	n := 1 + rng.Intn(3) // 1..3 товаров
 	items := make([]intl.Item, 0, n)
 	for i := 0; i < n; i++ {
-		price := 100 + rand.Intn(900)
-		sale := []int{0, 10, 20, 30}[rand.Intn(4)]
+		price := 100 + rng.Intn(900)
+		sale := []int{0, 10, 20, 30}[rng.Intn(4)]
 		total := int(float64(price) * (1 - float64(sale)/100))
 		items = append(items, intl.Item{
-			ChrtID:      900000 + rand.Intn(999999),
+			ChrtID:      900000 + rng.Intn(999999),
 			TrackNumber: track,
 			Price:       price,
 			RID:         strings.ToLower(randHex(8) + randHex(4)),
@@ -132,9 +136,9 @@ func genItems(track string) []intl.Item {
 			Sale:        sale,
 			Size:        pick([]string{"0", "S", "M"}),
 			TotalPrice:  total,
-			NmID:        2000000 + rand.Intn(900000),
+			NmID:        2000000 + rng.Intn(900000),
 			Brand:       pick([]string{"Vivienne Sabo", "NoBrand", "Acme"}),
-			Status:      pickInt([]int{202, 208, 301}),
+			Status:      pick([]int{202, 208, 301}),
 		})
 	}
 	return items
@@ -142,9 +146,9 @@ func genItems(track string) []intl.Item {
 
 func randHex(n int) string {
 	b := make([]byte, n)
-	if _, err := rand.Read(b); err != nil {
+	if _, err := rng.Read(b); err != nil {
 		for i := range b {
-			b[i] = byte(rand.Intn(256))
+			b[i] = byte(rng.Intn(256))
 		}
 	}
 	return hex.EncodeToString(b)
@@ -152,9 +156,10 @@ func randHex(n int) string {
 func randomDigits(n int) string {
 	sb := strings.Builder{}
 	for i := 0; i < n; i++ {
-		sb.WriteByte(byte('0' + rand.Intn(10)))
+		sb.WriteByte(byte('0' + rng.Intn(10)))
 	}
 	return sb.String()
 }
-func pick[T any](arr []T) T { return arr[rand.Intn(len(arr))] }
-func pickInt(arr []int) int { return arr[rand.Intn(len(arr))] }
+
+// рандомайзер - возвращает случайноый элемент массива
+func pick[T any](arr []T) T { return arr[rng.Intn(len(arr))] }

@@ -3,7 +3,6 @@ package internal
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 
 	"github.com/IBM/sarama"
@@ -39,7 +38,7 @@ func (c *Consumer) Start(ctx context.Context) error {
 	handler := &cgHandler{cache: c.cache, repo: c.repo}
 	for {
 		if err := c.group.Consume(ctx, []string{c.topic}, handler); err != nil {
-			fmt.Println("Consumer: ", handler)
+			log.Printf("Consume error: %v", err)
 		}
 		if ctx.Err() != nil {
 			return ctx.Err()
@@ -58,6 +57,7 @@ func (h *cgHandler) Setup(sarama.ConsumerGroupSession) error { return nil }
 
 func (h *cgHandler) Cleanup(sarama.ConsumerGroupSession) error { return nil }
 
+// Получаем партицию сообщений и обрабатываем их по одному в цикле
 func (h *cgHandler) ConsumeClaim(sess sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
 	for msg := range claim.Messages() {
 		var o Order

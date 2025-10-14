@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"os/signal"
 	"syscall"
@@ -34,7 +35,12 @@ func main() {
 
 	// kafka consumer
 	consumer := intl.NewConsumer(cfg.Brokers, cfg.Topic, cfg.Group, cache, repo)
-	go func() { _ = consumer.Start(ctx) }()
+	go func() {
+		err := consumer.Start(ctx)
+		if err != nil {
+			log.Printf("Consumer start error: %v", err)
+		}
+	}()
 	defer consumer.Close()
 
 	// http
@@ -44,10 +50,18 @@ func main() {
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 	}
-	go func() { _ = srv.ListenAndServe() }()
+	go func() {
+		err := srv.ListenAndServe()
+		if err != nil {
+			log.Printf("Server start error: %v", err)
+		}
+	}()
 
 	<-ctx.Done()
 	shCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	_ = srv.Shutdown(shCtx)
+	err = srv.Shutdown(shCtx)
+	if err != nil {
+		log.Printf("shutdown error: %v", err)
+	}
 }

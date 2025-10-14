@@ -3,6 +3,7 @@ package internal
 import (
 	"context"
 	"errors"
+	"log"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -20,6 +21,7 @@ func NewRepo(pool *pgxpool.Pool) *Repo { return &Repo{Pool: pool} }
 func (r *Repo) Upsert(ctx context.Context, o *Order) error {
 	tx, err := r.Pool.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
+		log.Println("Transaction error (Upsert)")
 		return err
 	}
 	defer func() {
