@@ -10,9 +10,18 @@ PG_USER  := postgres
 PG_PASS  := postgres
 PG_DB    := order_service_db
 
+# .PHONY: up
+# up:
+# 	$(DC) up -d --build
+
 .PHONY: up
-up:
-	$(DC) up -d --build
+cache-on-up:
+	@CACHE_ENABLED=1 docker compose up -d --build
+
+# Соберём сервис с выключенным кэшем
+.PHONY: up-nocache
+cache-off-up:
+	@CACHE_ENABLED=0 docker compose up -d --build
 
 .PHONY: down
 down:
@@ -53,16 +62,6 @@ clean:
 .PHONY: produce
 produce:
 	go run ./cmd/producer -n 5 -interval 1s
-
-# Соберём сервис с включенным кэшем
-.PHONY: cache-on-up
-cache-on-up:
-	@CACHE_ENABLED=1 docker compose up -d --build
-
-# Соберём сервис с выключенным кэшем
-.PHONY: cache-off-up
-cache-off-up:
-	@CACHE_ENABLED=0 docker compose up -d --build
 
 .PHONY: app-logs
 app-logs:
