@@ -32,12 +32,14 @@ func Env() Config {
 		return v
 	}
 	return Config{
-		Addr:         get("HTTP_ADDR"),
-		PGURL:        get("PG_URL"),
-		Brokers:      strings.Split(get("KAFKA_BROKERS"), ","),
-		Topic:        get("KAFKA_TOPIC"),
-		Group:        get("KAFKA_GROUP_ID"),
-		WarmN:        1000,
+		Addr:    get("HTTP_ADDR"),
+		PGURL:   get("PG_URL"),
+		Brokers: strings.Split(get("KAFKA_BROKERS"), ","),
+		Topic:   get("KAFKA_TOPIC"),
+		Group:   get("KAFKA_GROUP_ID"),
+		// при старте сервиса сохраняю последние 3 заказа в кеш
+		// (количество просто взял с потолка)
+		WarmN:        3,
 		CacheEnabled: loadCache(),
 	}
 }

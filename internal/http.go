@@ -67,6 +67,15 @@ func (h *HTTP) getOrder(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 		return
 	}
 	if !nocache {
+		// так как у нас лимит на заказы в кеше
+		// надо удалить лишние перед сохранением в кеш
+		// if len(h.cache.m) == h.cache.cacheLimit {
+		// 	orders := h.cache.m
+		// 	for k := range orders {
+		// 		h.cache.Delete(k)
+		// 		break
+		// 	}
+		// }
 		h.cache.Set(o)
 	}
 

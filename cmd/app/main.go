@@ -30,6 +30,7 @@ func main() {
 
 	// прогрев
 	if list, err := repo.LoadRecent(ctx, cfg.WarmN); err == nil {
+		// cache.DeleteAllItems()
 		cache.Warm(list)
 	}
 

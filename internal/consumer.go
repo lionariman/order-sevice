@@ -61,15 +61,24 @@ func (h *cgHandler) Cleanup(sarama.ConsumerGroupSession) error { return nil }
 func (h *cgHandler) ConsumeClaim(sess sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
 	for msg := range claim.Messages() {
 		var o Order
-		if err := json.Unmarshal(msg.Value, &o); err != nil || o.OrderUID == "" {
+		if err := json.Unmarshal(msg.Value, &o); err != nil {
+			log.Printf("failed to decode order: %v", err)
 			sess.MarkMessage(msg, "invalid-json")
+			continue
+		}
+		if err := o.Validate(); err != nil {
+			log.Printf("received invalid order: %v", err)
+			sess.MarkMessage(msg, "invalid-data")
 			continue
 		}
 		if err := h.repo.Upsert(sess.Context(), &o); err != nil {
 			continue
 		}
-		h.cache.Set(&o)
-		log.Printf("[CONSUMED] id=%s -> saved to DB and cache", o.OrderUID)
+		// каждый заказ кладем в бд
+		// закомментировано потому что нам не следует класть каждый заказ в кеш
+		// кладем в кеш только те последние которые клиент запросил
+		// h.cache.Set(&o)
+		// log.Printf("[CONSUMED] id=%s -> saved to DB and cache", o.OrderUID)
 		sess.MarkMessage(msg, "")
 	}
 	return nil
