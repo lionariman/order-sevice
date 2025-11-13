@@ -44,7 +44,7 @@ func main() {
 	defer prod.Close()
 
 	for i := 0; i < *n; i++ {
-		o := genOrder()
+		o := GenOrder()
 		b, err := json.Marshal(o)
 		if err != nil {
 			log.Printf("marshall failed: %v", err)
@@ -74,7 +74,7 @@ func getenv(k, def string) string {
 	return def
 }
 
-func genOrder() *intl.Order {
+func GenOrder() *intl.Order {
 	track := gofakeit.Regex("WB[A-Z0-9]{6}")
 	items := genItems(track)
 

@@ -15,12 +15,12 @@ PG_DB    := order_service_db
 # 	$(DC) up -d --build
 
 .PHONY: up
-cache-on-up:
+up:
 	@CACHE_ENABLED=1 docker compose up -d --build
 
 # Соберём сервис с выключенным кэшем
 .PHONY: up-nocache
-cache-off-up:
+up-nocache:
 	@CACHE_ENABLED=0 docker compose up -d --build
 
 .PHONY: down

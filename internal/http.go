@@ -12,15 +12,15 @@ import (
 )
 
 type HTTP struct {
-	cache *Cache
-	repo  *Repo
-	cfg   *Config
+	Cache OrderCache
+	Repo  OrderRepository
+	Cfg   *Config
 }
 
-func NewHTTP(cache *Cache, repo *Repo, cfg *Config) http.Handler {
-	h := &HTTP{cache: cache, repo: repo, cfg: cfg}
+func NewHTTP(cache OrderCache, repo OrderRepository, cfg *Config) http.Handler {
+	h := &HTTP{Cache: cache, Repo: repo, Cfg: cfg}
 	r := httprouter.New()
-	r.GET("/order/:id", h.getOrder)
+	r.GET("/order/:id", h.GetOrder)
 	r.ServeFiles("/static/*filepath", http.Dir("web"))
 	r.GET("/", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		http.ServeFile(w, r, "web/index.html")
@@ -28,15 +28,15 @@ func NewHTTP(cache *Cache, repo *Repo, cfg *Config) http.Handler {
 	return r
 }
 
-func (h *HTTP) getOrder(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func (h *HTTP) GetOrder(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	start := time.Now()
 	id := ps.ByName("id")
 
 	// глобально выключенный кеш или ?nocache=1
-	nocache := h.cfg == nil || !h.cfg.CacheEnabled || r.URL.Query().Has("nocache")
+	nocache := h.Cfg == nil || !h.Cfg.CacheEnabled || r.URL.Query().Has("nocache")
 
 	if !nocache { // пробуем кеш
-		if o, ok := h.cache.Get(id); ok {
+		if o, ok := h.Cache.Get(id); ok {
 			w.Header().Set("X-Source", "cache")
 			w.Header().Set("X-Duration-ms", strconv.FormatInt(time.Since(start).Milliseconds(), 10))
 			dur := time.Since(start)
@@ -55,7 +55,7 @@ func (h *HTTP) getOrder(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 	}
 
 	// идём в БД
-	o, ok, err := h.repo.Get(r.Context(), id)
+	o, ok, err := h.Repo.Get(r.Context(), id)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		log.Printf("DB get request (no-cache) error: %v", err)
@@ -66,17 +66,9 @@ func (h *HTTP) getOrder(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 		log.Printf("DB not found (no-cache) error: %v", err)
 		return
 	}
+	//
 	if !nocache {
-		// так как у нас лимит на заказы в кеше
-		// надо удалить лишние перед сохранением в кеш
-		// if len(h.cache.m) == h.cache.cacheLimit {
-		// 	orders := h.cache.m
-		// 	for k := range orders {
-		// 		h.cache.Delete(k)
-		// 		break
-		// 	}
-		// }
-		h.cache.Set(o)
+		h.Cache.Set(o)
 	}
 
 	w.Header().Set("X-Source", "db")
@@ -89,6 +81,6 @@ func (h *HTTP) getOrder(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 	// fmt.Println(">> DB [", o, "]")
 	err = json.NewEncoder(w).Encode(o)
 	if err != nil {
-		log.Printf("Encoding error: %v", err)
+		log.Printf("Encoding (order to json) error: %v", err)
 	}
 }
