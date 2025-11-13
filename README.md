@@ -30,11 +30,14 @@ Dockerfile, docker-compose.yaml, Makefile
 - `CACHE_ENABLED` — включает/выключает использование кэша.
 
 ## Запуск
-1. `cp .env.example .env` (при необходимости откорректируйте значения).
-2. `make cache-on-up` — запустить весь стек в Docker. `make cache-off-up` выключит кэш.
-3. `make migrate-up` / `make migrate-down` — ручное применение и откат миграций.
-4. После старта API доступно по `http://localhost:8081/order/{order_uid}` (параметр `?nocache=1` обходит кэш).
-5. `make produce` или `go run ./cmd/producer -n 10 -interval 500ms` — сгенерировать тестовые заказы.
+1. `cp .env.example .env` (при необходимости обновите значения).
+2. `make up` — поднять PostgreSQL, Kafka+Zookeeper, Kafka UI и приложение; `make up-nocache` запускает сервис без кэша.
+3. `make migrate-up` / `make migrate-down` — применить или откатить миграции (`db/001_init.sql`, `db/001_down.sql`).
+4. Сгенерировать заказы: `make produce` или `go run ./cmd/producer -n 10 -interval 500ms`.
+5. Смотреть сообщения Kafka: откройте Kafka UI на `http://localhost:8080`, выберите топик `orders` и пролистайте события.
+6. Web/API:
+   - `curl http://localhost:8081/order/<order_uid>` — получить заказ (добавьте `?nocache=1`, чтобы обойти кэш).
+   - Перейдите на `http://localhost:8081/`, введите `order_uid` в форме и получите JSON прямо в браузере.
 
 ## Тесты
 - Моки находятся в `internal/mocks` и генерируются `mockgen` (см. директиву `//go:generate` в `internal/contracts.go`).
